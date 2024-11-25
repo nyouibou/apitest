@@ -1,49 +1,75 @@
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# A simple in-memory structure to store tasks
-tasks = []
+# Mocked product data (in-memory store)
+products = [
+    {
+        "productid": 1,
+        "productname": "Apple",
+        "description": "Fresh Red Apple",
+        "image": "apple.jpg",
+        "wholesaleprice": 2.5,
+        "retailprice": 3.0,
+        "quantity": 100,
+        "type": "fruit",
+        "fid": 1
+    },
+    {
+        "productid": 2,
+        "productname": "Banana",
+        "description": "Ripe Yellow Banana",
+        "image": "banana.jpg",
+        "wholesaleprice": 1.2,
+        "retailprice": 1.5,
+        "quantity": 150,
+        "type": "fruit",
+        "fid": 2
+    },
+    {
+        "productid": 3,
+        "productname": "Carrot",
+        "description": "Fresh Organic Carrot",
+        "image": "carrot.jpg",
+        "wholesaleprice": 3.0,
+        "retailprice": 3.5,
+        "quantity": 50,
+        "type": "vegetable",
+        "fid": 3
+    }
+]
 
-@app.route('/', methods=['GET'])
-def home():
-    # Display existing tasks and a form to add a new task
-    html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Todo List</title>
-</head>
-<body>
-    <h1>Todo List</h1>
-    <form action="/add" method="POST">
-        <input type="text" name="task" placeholder="Enter a new task">
-        <input type="submit" value="Add Task">
-    </form>
-    <ul>
-        {% for task in tasks %}
-        <li>{{ task }} <a href="/delete/{{ loop.index0 }}">x</a></li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
-'''
-    return render_template_string(html, tasks=tasks)
+# Endpoint to get all products
+@app.route('/products', methods=['GET'])
+def get_products():
+    return jsonify({"products": products}), 200
 
-@app.route('/add', methods=['POST'])
-def add_task():
-    # Add a new task from the form data
-    task = request.form.get('task')
-    if task:
-        tasks.append(task)
-    return home()
+# Endpoint to get a single product by its ID
+@app.route('/product/<int:product_id>', methods=['GET'])
+def get_product(product_id):
+    product = next((product for product in products if product['productid'] == product_id), None)
+    if product is None:
+        return jsonify({"error": "Product not found"}), 404
+    return jsonify({"product": product}), 200
 
-@app.route('/delete/<int:index>', methods=['GET'])
-def delete_task(index):
-    # Delete a task based on its index
-    if index < len(tasks):
-        tasks.pop(index)
-    return home()
+# Endpoint to add a new product (mock data, no SQL)
+@app.route('/product', methods=['POST'])
+def add_product():
+    data = request.json
+    new_product = {
+        "productid": len(products) + 1,
+        "productname": data.get("productname"),
+        "description": data.get("description"),
+        "image": data.get("image"),
+        "wholesaleprice": data.get("wholesaleprice"),
+        "retailprice": data.get("retailprice"),
+        "quantity": data.get("quantity"),
+        "type": data.get("type"),
+        "fid": data.get("fid")  # Mock farmer ID or product owner
+    }
+    products.append(new_product)
+    return jsonify({"message": "Product added successfully", "product": new_product}), 201
 
+# Running the Flask app
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True)
